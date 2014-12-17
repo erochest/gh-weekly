@@ -26,6 +26,25 @@ module GhWeekly.Types
     , userType
     , userSiteAdmin
 
+    , Organization(..)
+    , orgLogin
+    , orgID
+    , orgAvatarUrl
+    , orgGravatarId
+    , orgUrl
+    , orgHtmlUrl
+    , orgFollowersUrl
+    , orgFollowingUrl
+    , orgGistsUrl
+    , orgStarredUrl
+    , orgSubscriptionsUrl
+    , orgOrganizationsUrl
+    , orgReposUrl
+    , orgEventsUrl
+    , orgReceivedEventsUrl
+    , orgType
+    , orgSiteAdmin
+
     , RepoPerms(..)
     , permsAdmin
     , permsPush
@@ -62,6 +81,8 @@ module GhWeekly.Types
     , repoCreatedAt
     , repoUpdatedAt
     , repoPermissions
+    , repoParent
+    , repoSource
 
     , Event
     , Commit
@@ -118,6 +139,30 @@ makeLenses ''User
 $(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 5
                             } ''User)
 
+data Organization
+        = Organization
+        { _orgLogin             :: !Text
+        , _orgID                :: !Int
+        , _orgAvatarUrl         :: !Text
+        , _orgGravatarId        :: !Text
+        , _orgUrl               :: !Text
+        , _orgHtmlUrl           :: !Text
+        , _orgFollowersUrl      :: !Text
+        , _orgFollowingUrl      :: !Text
+        , _orgGistsUrl          :: !Text
+        , _orgStarredUrl        :: !Text
+        , _orgSubscriptionsUrl  :: !Text
+        , _orgOrganizationsUrl  :: !Text
+        , _orgReposUrl          :: !Text
+        , _orgEventsUrl         :: !Text
+        , _orgReceivedEventsUrl :: !Text
+        , _orgType              :: !Text
+        , _orgSiteAdmin         :: !Bool
+        } deriving (Show)
+makeLenses ''Organization
+$(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 4
+                            } ''Organization)
+
 data RepoPerms
         = RepoPerms
         { _permsAdmin :: !Bool
@@ -131,36 +176,40 @@ $(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 6
 
 data Repo
         = Repo
-        { _repoID              :: !Int
-        , _repoOwner           :: !User
-        , _repoName            :: !Text
-        , _repoFullName        :: !Text
-        , _repoDescription     :: !Text
-        , _repoPrivate         :: !Bool
-        , _repoFork            :: !Bool
-        , _repoUrl             :: !Text
-        , _repoHtmlUrl         :: !Text
-        , _repoCloneUrl        :: !Text
-        , _repoGitUrl          :: !Text
-        , _repoSshUrl          :: !Text
-        , _repoSvnUrl          :: !Text
-        , _repoMirrorUrl       :: !Text
-        , _repoHomepage        :: !Text
-        , _repoLanguage        :: !(Maybe Text)
-        , _repoForksCount      :: !Int
-        , _repoStargazersCount :: !Int
-        , _repoWatchersCount   :: !Int
-        , _repoSize            :: !Int
-        , _repoDefaultBranch   :: !Text
-        , _repoOpenIssuesCount :: !Int
-        , _repoHasIssues       :: !Bool
-        , _repoHasWiki         :: !Bool
-        , _repoHasPages        :: !Bool
-        , _repoHasDownloads    :: !Bool
-        , _repoPushedAt        :: !UTCTime
-        , _repoCreatedAt       :: !UTCTime
-        , _repoUpdatedAt       :: !UTCTime
-        , _repoPermissions     :: !RepoPerms
+        { _repoID               :: !Int
+        , _repoOwner            :: !User
+        , _repoOrgranization    :: !(Maybe Organization)
+        , _repoName             :: !Text
+        , _repoFullName         :: !Text
+        , _repoDescription      :: !Text
+        , _repoPrivate          :: !Bool
+        , _repoFork             :: !Bool
+        , _repoUrl              :: !Text
+        , _repoHtmlUrl          :: !Text
+        , _repoCloneUrl         :: !(Maybe Text)
+        , _repoGitUrl           :: !(Maybe Text)
+        , _repoSshUrl           :: !(Maybe Text)
+        , _repoSvnUrl           :: !(Maybe Text)
+        , _repoMirrorUrl        :: !(Maybe Text)
+        , _repoHomepage         :: !(Maybe Text)
+        , _repoLanguage         :: !(Maybe Text)
+        , _repoForksCount       :: !(Maybe Int)
+        , _repoStargazersCount  :: !(Maybe Int)
+        , _repoWatchersCount    :: !(Maybe Int)
+        , _repoSubscribersCount :: !(Maybe Int)
+        , _repoSize             :: !(Maybe Int)
+        , _repoDefaultBranch    :: !(Maybe Text)
+        , _repoOpenIssuesCount  :: !(Maybe Int)
+        , _repoHasIssues        :: !(Maybe Bool)
+        , _repoHasWiki          :: !(Maybe Bool)
+        , _repoHasPages         :: !(Maybe Bool)
+        , _repoHasDownloads     :: !(Maybe Bool)
+        , _repoPushedAt         :: !(Maybe UTCTime)
+        , _repoCreatedAt        :: !(Maybe UTCTime)
+        , _repoUpdatedAt        :: !(Maybe UTCTime)
+        , _repoPermissions      :: !(Maybe RepoPerms)
+        , _repoParent           :: !(Maybe Repo)
+        , _repoSource           :: !(Maybe Repo)
         }
         deriving (Show)
 makeLenses ''Repo
