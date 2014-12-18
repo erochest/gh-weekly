@@ -52,6 +52,7 @@ module GhWeekly.Types
     , Repo(..)
     , repoID
     , repoOwner
+    , repoOrganization
     , repoName
     , repoFullName
     , repoDescription
@@ -69,6 +70,7 @@ module GhWeekly.Types
     , repoForksCount
     , repoStargazersCount
     , repoWatchersCount
+    , repoSubscribersCount
     , repoSize
     , repoDefaultBranch
     , repoOpenIssuesCount
@@ -83,7 +85,19 @@ module GhWeekly.Types
     , repoParent
     , repoSource
 
-    , Event
+    , EventType(..)
+    , Event(..)
+    , eventID
+    , eventUrl
+    , eventActor
+    , eventCommitId
+    , eventEvent
+    , eventCreatedAt
+    , eventLabel
+    , eventAssignee
+    , eventMilestone
+    , eventRename
+
     , Commit
 
     , RepoReport(..)
@@ -98,6 +112,8 @@ module GhWeekly.Types
 
 
 import           Control.Lens
+import           Control.Monad
+import           Data.Aeson
 import           Data.Aeson.TH
 import qualified Data.List      as L
 import           Data.Text
@@ -176,7 +192,7 @@ data Repo
         = Repo
         { _repoID               :: !Int
         , _repoOwner            :: !User
-        , _repoOrgranization    :: !(Maybe User)
+        , _repoOrganization     :: !(Maybe User)
         , _repoName             :: !Text
         , _repoFullName         :: !Text
         , _repoDescription      :: !Text
@@ -214,7 +230,83 @@ makeLenses ''Repo
 $(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 5
                             } ''Repo)
 
+data EventType
+        = Closed
+        | Reopened
+        | Subscribed
+        | Merged
+        | Referenced
+        | Mentioned
+        | Assigned
+        | Unassigned
+        | Labeled
+        | Unlabeled
+        | Milestoned
+        | Demilestoned
+        | Renamed
+        | Locked
+        | Unlocked
+        | HeadRefDeleted
+        | HeadRefRestored
+        deriving (Show)
+makePrisms ''EventType
+
+instance FromJSON EventType where
+    parseJSON (String "closed")            = return Closed
+    parseJSON (String "reopened")          = return Reopened
+    parseJSON (String "subscribed")        = return Subscribed
+    parseJSON (String "merged")            = return Merged
+    parseJSON (String "referenced")        = return Referenced
+    parseJSON (String "mentioned")         = return Mentioned
+    parseJSON (String "assigned")          = return Assigned
+    parseJSON (String "unassigned")        = return Unassigned
+    parseJSON (String "labeled")           = return Labeled
+    parseJSON (String "unlabeled")         = return Unlabeled
+    parseJSON (String "milestoned")        = return Milestoned
+    parseJSON (String "demilestoned")      = return Demilestoned
+    parseJSON (String "renamed")           = return Renamed
+    parseJSON (String "locked")            = return Locked
+    parseJSON (String "unlocked")          = return Unlocked
+    parseJSON (String "head_ref_deleted")  = return HeadRefDeleted
+    parseJSON (String "head_ref_restored") = return HeadRefRestored
+    parseJSON _                            = mzero
+
+instance ToJSON EventType where
+    toJSON Closed          = String "closed"
+    toJSON Reopened        = String "reopened"
+    toJSON Subscribed      = String "subscribed"
+    toJSON Merged          = String "merged"
+    toJSON Referenced      = String "referenced"
+    toJSON Mentioned       = String "mentioned"
+    toJSON Assigned        = String "assigned"
+    toJSON Unassigned      = String "unassigned"
+    toJSON Labeled         = String "labeled"
+    toJSON Unlabeled       = String "unlabeled"
+    toJSON Milestoned      = String "milestoned"
+    toJSON Demilestoned    = String "demilestoned"
+    toJSON Renamed         = String "renamed"
+    toJSON Locked          = String "locked"
+    toJSON Unlocked        = String "unlocked"
+    toJSON HeadRefDeleted  = String "head_ref_deleted"
+    toJSON HeadRefRestored = String "head_ref_restored"
+
 data Event
+        = Event
+        { _eventID        :: !Int
+        , _eventUrl       :: !Text
+        , _eventActor     :: !User
+        , _eventCommitId  :: !Text
+        , _eventEvent     :: !EventType
+        , _eventCreatedAt :: !UTCTime
+        , _eventLabel     :: !Object
+        , _eventAssignee  :: !(Maybe User)
+        , _eventMilestone :: !(Maybe Object)
+        , _eventRename    :: !(Maybe Object)
+        } deriving (Show)
+makeLenses ''Event
+$(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 6
+                            } ''Event)
+
 data Commit
 
 data RepoReport
