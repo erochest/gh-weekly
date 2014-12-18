@@ -7,11 +7,6 @@ module GhWeekly.Types
     , ghwUser
     , ghwOrgs
 
-    , User
-    , Repo
-    , Event
-    , Commit
-
     , RepoReport(..)
     , rrRepo
     , rrIssueEvents
@@ -24,6 +19,7 @@ module GhWeekly.Types
 
 
 import           Control.Lens
+import           Data.Aeson
 import qualified Data.Text    as T
 
 
@@ -34,22 +30,17 @@ data GhWeekly
         } deriving (Show)
 makeLenses ''GhWeekly
 
-data User
-data Repo
-data Event
-data Commit
-
 data RepoReport
         = RepoReport
-        { _rrRepo        :: !Repo
-        , _rrIssueEvents :: ![Event]
-        , _rrCommits     :: ![Commit]
+        { _rrRepo        :: !Object
+        , _rrIssueEvents :: ![Object]
+        , _rrCommits     :: ![Object]
         }
 makeLenses ''RepoReport
 
 data UserReport
         = UserReport
-        { _reportUser :: !User
+        { _reportUser :: !Object
         , _reportRepo :: !RepoReport
         }
 makeLenses ''UserReport

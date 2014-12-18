@@ -5,11 +5,11 @@ module GhWeekly.Report
     ( render
     , renderUser
     , renderRepo
-    , renderIssueEvent
-    , renderCommit
+    , renderObject
     ) where
 
 
+import           Data.Aeson
 import qualified Data.Text        as T
 import           Text.Blaze.Html5
 -- import qualified Text.Blaze.Html5            as H
@@ -27,8 +27,5 @@ renderUser = undefined
 renderRepo :: RepoReport -> Html
 renderRepo = undefined
 
-renderIssueEvent :: Event -> Html
-renderIssueEvent = undefined
-
-renderCommit :: Commit -> Html
-renderCommit = undefined
+renderObject :: Object -> Html
+renderObject = undefined
