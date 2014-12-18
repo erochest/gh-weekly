@@ -29,21 +29,20 @@ module GhWeekly.Types
     , Organization(..)
     , orgLogin
     , orgID
-    , orgAvatarUrl
-    , orgGravatarId
     , orgUrl
+    , orgAvatarUrl
+    , orgName
+    , orgCompany
+    , orgBlog
+    , orgLocation
+    , orgEmail
+    , orgPublicRepos
+    , orgPublicGists
+    , orgFollowers
+    , orgFollowing
     , orgHtmlUrl
-    , orgFollowersUrl
-    , orgFollowingUrl
-    , orgGistsUrl
-    , orgStarredUrl
-    , orgSubscriptionsUrl
-    , orgOrganizationsUrl
-    , orgReposUrl
-    , orgEventsUrl
-    , orgReceivedEventsUrl
+    , orgCreatedAt
     , orgType
-    , orgSiteAdmin
 
     , RepoPerms(..)
     , permsAdmin
@@ -141,23 +140,22 @@ $(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 5
 
 data Organization
         = Organization
-        { _orgLogin             :: !Text
-        , _orgID                :: !Int
-        , _orgAvatarUrl         :: !Text
-        , _orgGravatarId        :: !Text
-        , _orgUrl               :: !Text
-        , _orgHtmlUrl           :: !Text
-        , _orgFollowersUrl      :: !Text
-        , _orgFollowingUrl      :: !Text
-        , _orgGistsUrl          :: !Text
-        , _orgStarredUrl        :: !Text
-        , _orgSubscriptionsUrl  :: !Text
-        , _orgOrganizationsUrl  :: !Text
-        , _orgReposUrl          :: !Text
-        , _orgEventsUrl         :: !Text
-        , _orgReceivedEventsUrl :: !Text
-        , _orgType              :: !Text
-        , _orgSiteAdmin         :: !Bool
+        { _orgLogin       :: !Text
+        , _orgID          :: !Int
+        , _orgUrl         :: !Text
+        , _orgAvatarUrl   :: !Text
+        , _orgName        :: !Text
+        , _orgCompany     :: !Text
+        , _orgBlog        :: !Text
+        , _orgLocation    :: !Text
+        , _orgEmail       :: !Text
+        , _orgPublicRepos :: !Int
+        , _orgPublicGists :: !Int
+        , _orgFollowers   :: !Int
+        , _orgFollowing   :: !Int
+        , _orgHtmlUrl     :: !Text
+        , _orgCreatedAt   :: !UTCTime
+        , _orgType        :: !Text
         } deriving (Show)
 makeLenses ''Organization
 $(deriveJSON defaultOptions { fieldLabelModifier = decamel . L.drop 4
@@ -178,7 +176,7 @@ data Repo
         = Repo
         { _repoID               :: !Int
         , _repoOwner            :: !User
-        , _repoOrgranization    :: !(Maybe Organization)
+        , _repoOrgranization    :: !(Maybe User)
         , _repoName             :: !Text
         , _repoFullName         :: !Text
         , _repoDescription      :: !Text
