@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- TODO: pagination
-
 
 module GhWeekly.Network
     ( githubUrl
@@ -30,6 +28,7 @@ import           Data.Time
 import           Network.Wreq
 import           System.Locale
 
+import           GhWeekly.Lens
 import           GhWeekly.Types
 
 
@@ -63,7 +62,7 @@ getUser user = gh ["/users/", user] []
 
 getUserOrgs :: T.Text -> Github [Value]
 getUserOrgs user =   mapM ((`github'` []) . T.unpack)
-                 .   mapMaybe (preview (key "url" . _String))
+                 .   mapMaybe (preview (url . _String))
                  =<< (gh ["/users/", user, "/orgs"] [] :: Github [Value])
 
 getOrg :: T.Text -> Github Value
@@ -76,9 +75,9 @@ getOrgRepos :: T.Text -> Github [Value]
 getOrgRepos org = gh ["/orgs/", org, "/repos"] []
 
 getRepoCommitsFor :: T.Text -> T.Text -> UTCTime -> Github [Value]
-getRepoCommitsFor fullRepoName author since =
-    gh ["/repos/", fullRepoName, "/commits"] [ ("author", author)
-                                             , ("since", since')
+getRepoCommitsFor fullRepoName user since =
+    gh ["/repos/", fullRepoName, "/commits"] [ ("author", user)
+                                             , ("since",  since')
                                              ]
     where
         since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since

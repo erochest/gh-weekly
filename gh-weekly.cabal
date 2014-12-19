@@ -16,7 +16,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     GhWeekly.Network
+  exposed-modules:     GhWeekly.Lens
+                     , GhWeekly.Network
                      , GhWeekly.Report
                      , GhWeekly.Types
   -- other-modules:       
