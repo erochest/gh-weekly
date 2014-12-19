@@ -27,6 +27,9 @@ opts' =   GhWeekly
                     $  short 'o' <> long "org" <> metavar "ORGNAME"
                     <> help "An optional organization to look for\
                             \ commits in also.")
+      <*> option textReader
+                 (  short 't' <> long "token" <> metavar "GITHUB_TOKEN"
+                 <> help "The Oauth token to authenticate with Github.")
 
 opts :: ParserInfo GhWeekly
 opts = info (helper <*> opts')

@@ -11,6 +11,7 @@ module GhWeekly.Types
     ( GhWeekly(..)
     , ghwUser
     , ghwOrgs
+    , ghwOauthToken
 
     , GhAuth
     , Github
@@ -38,16 +39,17 @@ import           Data.Aeson
 import qualified Data.Text            as T
 
 
-data GhWeekly
-        = GhWeekly
-        { _ghwUser :: !T.Text
-        , _ghwOrgs :: !(Maybe T.Text)
-        } deriving (Show)
-makeLenses ''GhWeekly
-
 type OauthToken = T.Text
 type GhAuth     = OauthToken
 type Param      = (T.Text, T.Text)
+
+data GhWeekly
+        = GhWeekly
+        { _ghwUser       :: !T.Text
+        , _ghwOrgs       :: !(Maybe T.Text)
+        , _ghwOauthToken :: !OauthToken
+        } deriving (Show)
+makeLenses ''GhWeekly
 
 newtype Github a
     = Github { unGithub :: ReaderT GhAuth (EitherT SomeException IO) a }

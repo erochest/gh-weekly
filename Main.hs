@@ -11,9 +11,7 @@ import           Control.Lens
 import           Control.Monad.Trans
 import           Data.Aeson.Lens
 import           Data.Maybe
-import qualified Data.Text           as T
 import qualified Data.Text.IO        as TIO
-import           System.Environment
 import           System.Exit
 import           System.IO
 
@@ -36,9 +34,8 @@ exitEither (Right _)  = exitSuccess
 main :: IO ()
 main = do
     GhWeekly{..} <- parseArgs
-    oauthToken <- T.pack <$> (getEnv "GITHUB_TOKEN" :: IO String)
 
-    exitEither =<< (runGithub oauthToken $ do
+    exitEither =<< runGithub _ghwOauthToken (do
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos
                   =<< mapMaybe (preview (key "login" . _String))

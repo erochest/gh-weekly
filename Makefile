@@ -4,6 +4,7 @@ SRC=$(shell find src -name '*.hs')
 CABAL=cabal
 FLAGS=--enable-tests
 
+
 all: init test docs package
 
 init:
@@ -17,7 +18,7 @@ specs: build
 	./dist/build/gh-weekly-specs/gh-weekly-specs
 
 run:
-	${CABAL} run -- --user=erochest
+	${CABAL} run -- --user=erochest --token=$(GITHUB_TOKEN)
 
 
 # docs:
