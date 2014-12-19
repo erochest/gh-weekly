@@ -11,6 +11,7 @@ module GhWeekly.Types
     ( GhWeekly(..)
     , ghwUser
     , ghwOrgs
+    , ghwDays
     , ghwOauthToken
 
     , GhAuth
@@ -47,6 +48,7 @@ data GhWeekly
         = GhWeekly
         { _ghwUser       :: !T.Text
         , _ghwOrgs       :: !(Maybe T.Text)
+        , _ghwDays       :: !Int
         , _ghwOauthToken :: !OauthToken
         } deriving (Show)
 makeLenses ''GhWeekly

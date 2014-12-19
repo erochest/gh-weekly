@@ -27,6 +27,9 @@ opts' =   GhWeekly
                     $  short 'o' <> long "org" <> metavar "ORGNAME"
                     <> help "An optional organization to look for\
                             \ commits in also.")
+      <*> option auto
+                 (  short 'd' <> long "days" <> metavar "DAYS" <> value 7
+                 <> help "The number of days to report on. Default = 7.")
       <*> option textReader
                  (  short 't' <> long "token" <> metavar "GITHUB_TOKEN"
                  <> help "The Oauth token to authenticate with Github.")

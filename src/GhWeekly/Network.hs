@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- TODO: pagination
+
 
 module GhWeekly.Network
     ( githubUrl
@@ -11,6 +13,7 @@ module GhWeekly.Network
     , getOrg
     , getAllUserRepos
     , getOrgRepos
+    , getRepoCommitsFor
     ) where
 
 
@@ -20,11 +23,12 @@ import           Control.Lens
 import           Control.Monad.Reader
 import           Data.Aeson
 import           Data.Aeson.Lens
-import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Text            as T
 import           Data.Text.Encoding
+import           Data.Time
 import           Network.Wreq
+import           System.Locale
 
 import           GhWeekly.Types
 
@@ -70,3 +74,11 @@ getAllUserRepos user = gh ["/users/", user, "/repos"] [("type", "all")]
 
 getOrgRepos :: T.Text -> Github [Value]
 getOrgRepos org = gh ["/orgs/", org, "/repos"] []
+
+getRepoCommitsFor :: T.Text -> T.Text -> UTCTime -> Github [Value]
+getRepoCommitsFor fullRepoName author since =
+    gh ["/repos/", fullRepoName, "/commits"] [ ("author", author)
+                                             , ("since", since')
+                                             ]
+    where
+        since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since
