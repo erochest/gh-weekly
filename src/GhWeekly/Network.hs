@@ -23,7 +23,6 @@ import           Control.Monad.Reader
 import           Data.Aeson
 import           Data.Aeson.Lens
 import qualified Data.ByteString.Char8 as C
-import qualified Data.ByteString.Lazy  as BL
 import           Data.Foldable         hiding (concat)
 import           Data.Monoid
 import qualified Data.Text             as T
@@ -48,22 +47,20 @@ github' fullUrl ps = do
     let opts = defaults & header "Accept" .~ ["application/vnd.github.v3+json"]
                         & header "Authorization" .~ [token]
     go opts (Just fullUrl) ps
+    where
 
-decodeResponse :: FromJSON b => Response BL.ByteString -> Github b
-decodeResponse = hoistEitherGH
-               . fmapL (SomeException . ErrorCall)
-               . eitherDecode
-               . (^. responseBody)
+        decodeResponse = hoistEitherGH
+                       . fmapL (SomeException . ErrorCall)
+                       . eitherDecode
+                       . (^. responseBody)
 
-next :: Response a -> Maybe String
-next r = r ^? responseLink "rel" "next" . linkURL . to C.unpack
+        next r = r ^? responseLink "rel" "next" . linkURL . to C.unpack
 
-go :: FromJSON a => Options -> Maybe String -> [Param] -> Github [a]
-go _ Nothing _      = return []
-go opts (Just u) ps = do
-    liftIO . putStrLn $  "github: " ++ u
-    r <- liftIO $ getWith (opts & params .~ ps) u
-    (:) <$> decodeResponse r <*> go opts (next r) []
+        go _ Nothing _      = return []
+        go opts (Just u) ps' = do
+            -- liftIO . putStrLn $  "github: " ++ u
+            r <- liftIO $ getWith (opts & params .~ ps') u
+            (:) <$> decodeResponse r <*> go opts (next r) []
 
 gh :: FromJSON a => [T.Text] -> [Param] -> Github [a]
 gh ps = github (path ps)

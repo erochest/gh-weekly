@@ -36,7 +36,6 @@ exitEither (Right _)  = exitSuccess
 main :: IO ()
 main = do
     GhWeekly{..} <- parseArgs
-
     since <-  addUTCTime (fromIntegral $ _ghwDays * 24 * 60 * 60 * (-1))
           <$> getCurrentTime
 
@@ -44,10 +43,10 @@ main = do
         userRepos <-  getAllUserRepos _ghwUser
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos
-                  =<< mapMaybe (preview (login . _String))
-                  <$> getUserOrgs _ghwUser
+                  .   mapMaybe (preview (login . _String))
+                  =<< getUserOrgs _ghwUser
 
-        mapM_ (liftIO . TIO.putStrLn . uncurry renderCommits)
+        mapM_ (liftIO . TIO.putStr . uncurry renderCommits)
             =<< ( mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
                 . mapMaybe (preview (fullName . _String))
                 $ userRepos ++ orgRepos)
