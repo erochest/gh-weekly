@@ -26,6 +26,18 @@ import           GhWeekly.Types
 import           Opts
 
 
+-- TODO: query every branch :O
+
+-- TODO: use a set of commits, by hash, so there aren't duplicates after
+-- a merge
+
+-- TODO: give a summary of how many commits, how many files, and how many
+-- lines
+
+-- TODO: html output
+
+-- TODO: issue activity
+
 watch :: Show a => a -> IO a
 watch x = putStrLn ("WATCH: " ++ show x) >> return x
 
@@ -39,6 +51,7 @@ main = do
     since <-  addUTCTime (fromIntegral $ _ghwDays * 24 * 60 * 60 * (-1))
           <$> getCurrentTime
 
+    putStrLn "Querying github..."
     exitEither =<< runGithub _ghwOauthToken (do
         userRepos <-  getAllUserRepos _ghwUser
         orgRepos  <-  fmap concat
