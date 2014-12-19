@@ -40,7 +40,7 @@ renderObject :: Object -> Html
 renderObject = undefined
 
 renderCommits :: T.Text -> [Value] -> T.Text
--- renderCommits _ [] = T.empty
+renderCommits _ [] = T.empty
 renderCommits repo commits = TL.toStrict . toLazyText $
     "# " <> fromText repo <> "\t" <> fromString (show $ length commits) <> "\n"
     -- "# " <> fromText repo <> "\n\n" <> foldr renderCommit "\n\n" commits

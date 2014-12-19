@@ -18,14 +18,13 @@ import           Data.Traversable    hiding (mapM)
 import           System.Exit
 import           System.IO
 
+import           GhWeekly.Lens
 import           GhWeekly.Network
 import           GhWeekly.Report
 import           GhWeekly.Types
 
 import           Opts
 
-
-data Hole
 
 watch :: Show a => a -> IO a
 watch x = putStrLn ("WATCH: " ++ show x) >> return x
@@ -38,19 +37,19 @@ main :: IO ()
 main = do
     GhWeekly{..} <- parseArgs
 
-    since <-  addUTCTime (fromIntegral $ _ghwDays * 24 * 60 * 60)
+    since <-  addUTCTime (fromIntegral $ _ghwDays * 24 * 60 * 60 * (-1))
           <$> getCurrentTime
 
     exitEither =<< runGithub _ghwOauthToken (do
         userRepos <-  getAllUserRepos _ghwUser
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos
-                  =<< mapMaybe (preview (key "login" . _String))
+                  =<< mapMaybe (preview (login . _String))
                   <$> getUserOrgs _ghwUser
 
         mapM_ (liftIO . TIO.putStrLn . uncurry renderCommits)
             =<< ( mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
-                . mapMaybe (preview (key "full_name" . _String))
+                . mapMaybe (preview (fullName . _String))
                 $ userRepos ++ orgRepos)
         )
     where

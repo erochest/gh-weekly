@@ -15,14 +15,18 @@ module GhWeekly.Network
     ) where
 
 
+import           Control.Applicative
 import           Control.Error
 import           Control.Exception
 import           Control.Lens
 import           Control.Monad.Reader
 import           Data.Aeson
 import           Data.Aeson.Lens
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString.Lazy  as BL
+import           Data.Foldable         hiding (concat)
 import           Data.Monoid
-import qualified Data.Text            as T
+import qualified Data.Text             as T
 import           Data.Text.Encoding
 import           Data.Time
 import           Network.Wreq
@@ -35,49 +39,68 @@ import           GhWeekly.Types
 githubUrl :: String
 githubUrl = "https://api.github.com"
 
-github :: FromJSON a => String -> [Param] -> Github a
+github :: FromJSON a => String -> [Param] -> Github [a]
 github p = github' (githubUrl ++ p)
 
-github' :: FromJSON a => String -> [Param] -> Github a
-github' fullPath ps = do
+github' :: FromJSON a => String -> [Param] -> Github [a]
+github' fullUrl ps = do
     token <- asks (encodeUtf8 . mappend "token ")
     let opts = defaults & header "Accept" .~ ["application/vnd.github.v3+json"]
                         & header "Authorization" .~ [token]
-                        & params .~ ps
-    liftIO . putStrLn $ "github: " ++ fullPath
-    hoistEitherGH
-        .   fmapL (SomeException . ErrorCall)
-        .   eitherDecode
-        .   view responseBody
-        =<< liftIO (getWith opts fullPath)
+    go opts (Just fullUrl) ps
 
-gh :: FromJSON a => [T.Text] -> [Param] -> Github a
+decodeResponse :: FromJSON b => Response BL.ByteString -> Github b
+decodeResponse = hoistEitherGH
+               . fmapL (SomeException . ErrorCall)
+               . eitherDecode
+               . (^. responseBody)
+
+next :: Response a -> Maybe String
+next r = r ^? responseLink "rel" "next" . linkURL . to C.unpack
+
+go :: FromJSON a => Options -> Maybe String -> [Param] -> Github [a]
+go _ Nothing _      = return []
+go opts (Just u) ps = do
+    liftIO . putStrLn $  "github: " ++ u
+    r <- liftIO $ getWith (opts & params .~ ps) u
+    (:) <$> decodeResponse r <*> go opts (next r) []
+
+gh :: FromJSON a => [T.Text] -> [Param] -> Github [a]
 gh ps = github (path ps)
 
 path :: [T.Text] -> String
 path = T.unpack . mconcat
 
+orNull :: [Value] -> Value
+orNull []    = Null
+orNull (v:_) = v
+
 getUser :: T.Text -> Github Value
-getUser user = gh ["/users/", user] []
+getUser user = orNull <$> gh ["/users/", user] []
 
 getUserOrgs :: T.Text -> Github [Value]
-getUserOrgs user =   mapM ((`github'` []) . T.unpack)
+getUserOrgs user =   fmap (toList . mconcat)
+                 .   mapM ((`github'` []) . T.unpack)
                  .   mapMaybe (preview (url . _String))
-                 =<< (gh ["/users/", user, "/orgs"] [] :: Github [Value])
+                 .   toList
+                 .   mconcat
+                 =<< (gh ["/users/", user, "/orgs"] [] :: Github [[Value]])
 
 getOrg :: T.Text -> Github Value
-getOrg org = gh ["/orgs/", org] []
+getOrg org = orNull <$> gh ["/orgs/", org] []
 
 getAllUserRepos :: T.Text -> Github [Value]
-getAllUserRepos user = gh ["/users/", user, "/repos"] [("type", "all")]
+getAllUserRepos user =
+    concat <$> gh ["/users/", user, "/repos"] [("type", "all")]
 
 getOrgRepos :: T.Text -> Github [Value]
-getOrgRepos org = gh ["/orgs/", org, "/repos"] []
+getOrgRepos org = concat <$> gh ["/orgs/", org, "/repos"] []
 
 getRepoCommitsFor :: T.Text -> T.Text -> UTCTime -> Github [Value]
 getRepoCommitsFor fullRepoName user since =
-    gh ["/repos/", fullRepoName, "/commits"] [ ("author", user)
-                                             , ("since",  since')
-                                             ]
+        concat
+    <$> gh ["/repos/", fullRepoName, "/commits"] [ ("author", user)
+                                                 , ("since",  since')
+                                                 ]
     where
         since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since
