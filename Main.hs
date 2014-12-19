@@ -13,6 +13,7 @@ import           Data.Maybe
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as TIO
 import           System.Environment
+import           System.Exit
 import           System.IO
 
 import           GhWeekly.Network
@@ -44,5 +45,5 @@ main = do
             $   userRepos ++ orgRepos
 
     case r of
-        Left err -> hPrint stderr err
+        Left err -> hPrint stderr err >> exitFailure
         Right _  -> return ()
