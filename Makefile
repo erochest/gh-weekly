@@ -17,7 +17,7 @@ specs: build
 	./dist/build/gh-weekly-specs/gh-weekly-specs
 
 run:
-	${CABAL} run
+	${CABAL} run -- --user=erochest
 
 
 # docs:
