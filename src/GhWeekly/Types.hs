@@ -48,6 +48,7 @@ makeLenses ''GhWeekly
 type OauthToken = T.Text
 type GhAuth     = OauthToken
 type Param      = (T.Text, T.Text)
+
 newtype Github a
     = Github { unGithub :: ReaderT GhAuth (EitherT SomeException IO) a }
     deriving (Functor, Applicative, Monad)

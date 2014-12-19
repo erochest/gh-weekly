@@ -6,6 +6,7 @@ module Main where
 
 
 import           Control.Applicative
+import           Control.Exception
 import           Control.Lens
 import           Control.Monad.Trans
 import           Data.Aeson.Lens
@@ -28,12 +29,16 @@ data Hole
 watch :: Show a => a -> IO a
 watch x = putStrLn ("WATCH: " ++ show x) >> return x
 
+exitEither :: Either SomeException a -> IO ()
+exitEither (Left err) = hPrint stderr err >> exitFailure
+exitEither (Right _)  = exitSuccess
+
 main :: IO ()
 main = do
     GhWeekly{..} <- parseArgs
     oauthToken <- T.pack <$> (getEnv "GITHUB_TOKEN" :: IO String)
 
-    r <- runGithub oauthToken $ do
+    exitEither =<< (runGithub oauthToken $ do
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos
                   =<< mapMaybe (preview (key "login" . _String))
@@ -43,7 +48,4 @@ main = do
         mapM_ (liftIO . TIO.putStrLn)
             .   mapMaybe (preview (key "full_name" . _String))
             $   userRepos ++ orgRepos
-
-    case r of
-        Left err -> hPrint stderr err >> exitFailure
-        Right _  -> return ()
+        )
