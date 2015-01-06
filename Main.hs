@@ -28,8 +28,6 @@ import           GhWeekly.Types
 import           Opts
 
 
--- TODO: query every branch :O
-
 -- TODO: use a set of commits, by hash, so there aren't duplicates after
 -- a merge
 
