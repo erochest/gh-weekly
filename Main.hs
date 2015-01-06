@@ -36,7 +36,7 @@ import           Opts
 
 -- TODO: html output
 
--- TODO: issue activity
+-- TODO: issue activity (opened, closed, and contributed to)
 
 watch :: Show a => a -> IO a
 watch x = putStrLn ("WATCH: " ++ show x) >> return x
