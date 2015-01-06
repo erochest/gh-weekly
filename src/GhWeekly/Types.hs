@@ -18,6 +18,7 @@ module GhWeekly.Types
     , Github
     , runGithub
     , hoistEitherGH
+    , hoistEitherGH'
     , Param
 
     , RepoReport(..)
@@ -69,6 +70,9 @@ runGithub auth gh = runEitherT $ runReaderT (unGithub gh) auth
 
 hoistEitherGH :: Either SomeException a -> Github a
 hoistEitherGH = Github . ReaderT . const . EitherT . return
+
+hoistEitherGH' :: Either String a -> Github a
+hoistEitherGH' = hoistEitherGH . fmapL (toException . ErrorCall)
 
 data RepoReport
         = RepoReport
