@@ -4,13 +4,13 @@
 name:                gh-weekly
 version:             0.1.0.0
 synopsis:            Produce a weekly report of Github activity for a user.
--- description:         
+description:         Produce a weekly report of Github activity for a user.
 license:             Apache-2.0
 license-file:        LICENSE
 author:              Eric Rochester
 maintainer:          erochest@virginia.edu
 -- copyright:           
--- category:            
+category:            Productivity
 build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
@@ -71,3 +71,4 @@ executable gh-weekly
 source-repository this
   type:                git
   location:            git://github.com/erochest/gh-weekly.git
+  tag:                 master
