@@ -49,8 +49,7 @@ github' fullUrl ps = do
     go opts (Just fullUrl) ps
     where
 
-        decodeResponse = hoistEitherGH
-                       . fmapL (SomeException . ErrorCall)
+        decodeResponse = hoistEitherGH'
                        . eitherDecode
                        . (^. responseBody)
 
