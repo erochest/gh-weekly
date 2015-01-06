@@ -10,11 +10,13 @@ import           Control.Arrow
 import           Control.Exception
 import           Control.Lens
 import           Control.Monad.Trans
+import           Data.Aeson
 import           Data.Aeson.Lens
+import qualified Data.ByteString.Lazy.Char8 as BS
 import           Data.Maybe
-import qualified Data.Text.IO        as TIO
+import qualified Data.Text.IO               as TIO
 import           Data.Time
-import           Data.Traversable    hiding (mapM)
+import           Data.Traversable           hiding (mapM)
 import           System.Exit
 import           System.IO
 
@@ -65,4 +67,4 @@ main = do
                 $ userRepos ++ orgRepos)
         )
     where
-        getRepoCommitsFor' u s r = getRepoCommitsFor r u s
+        getRepoCommitsFor' u s r = getAllCommits r u s

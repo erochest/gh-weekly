@@ -2,7 +2,8 @@
 
 
 module GhWeekly.Lens
-    ( author
+    ( name
+    , author
     , commit
     , date
     , fullName
@@ -17,9 +18,10 @@ import           Data.Aeson
 import           Data.Aeson.Lens
 
 
-author, commit, date, fullName, login, message, url
+name, author, commit, date, fullName, login, message, url
     :: AsValue t => Traversal' t Value
 
+name     = key "name"
 author   = key "author"
 commit   = key "commit"
 date     = key "date"

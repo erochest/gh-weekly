@@ -12,6 +12,9 @@ module GhWeekly.Network
     , getAllUserRepos
     , getOrgRepos
     , getRepoCommitsFor
+    , getBranchCommits
+    , getBranches
+    , getAllCommits
     ) where
 
 
@@ -100,3 +103,23 @@ getRepoCommitsFor fullRepoName user since =
                                                  ]
     where
         since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since
+
+getBranchCommits :: T.Text -> T.Text -> UTCTime -> T.Text -> Github [Value]
+getBranchCommits fullRepoName user since branch =
+        concat
+    <$> gh ["/repos/", fullRepoName, "/commits"] [ ("author", user)
+                                                 , ("since", since')
+                                                 , ("sha", branch)
+                                                 ]
+    where
+        since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since
+
+getBranches :: T.Text -> Github [T.Text]
+getBranches fullRepoName =
+        mapMaybe (preview (name . _String)) . concat
+    <$> (gh ["/repos/", fullRepoName, "/branches"] [] :: Github [[Value]])
+
+getAllCommits :: T.Text -> T.Text -> UTCTime -> Github [Value]
+getAllCommits fullRepoName user since =
+    fmap concat . mapM (getBranchCommits fullRepoName user since)
+        =<< getBranches fullRepoName
