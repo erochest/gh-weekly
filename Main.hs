@@ -31,6 +31,8 @@ import           GhWeekly.Utils
 import           Opts
 
 
+-- TODO: set `since` date
+
 -- TODO: give a summary of how many commits, how many files, and how many
 -- lines
 
