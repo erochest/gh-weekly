@@ -10,6 +10,7 @@ module GhWeekly.Lens
     , login
     , message
     , url
+    , sha
     ) where
 
 
@@ -18,7 +19,7 @@ import           Data.Aeson
 import           Data.Aeson.Lens
 
 
-name, author, commit, date, fullName, login, message, url
+name, author, commit, date, fullName, login, message, url, sha
     :: AsValue t => Traversal' t Value
 
 name     = key "name"
@@ -29,3 +30,4 @@ fullName = key "full_name"
 login    = key "login"
 message  = key "message"
 url      = key "url"
+sha      = key "sha"

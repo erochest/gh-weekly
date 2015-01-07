@@ -13,7 +13,9 @@ import           Control.Monad.Trans
 import           Data.Aeson
 import           Data.Aeson.Lens
 import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.List                  as L
 import           Data.Maybe
+import           Data.Ord
 import qualified Data.Text.IO               as TIO
 import           Data.Time
 import           Data.Traversable           hiding (mapM)
@@ -24,12 +26,10 @@ import           GhWeekly.Lens
 import           GhWeekly.Network
 import           GhWeekly.Report
 import           GhWeekly.Types
+import           GhWeekly.Utils
 
 import           Opts
 
-
--- TODO: use a set of commits, by hash, so there aren't duplicates after
--- a merge
 
 -- TODO: give a summary of how many commits, how many files, and how many
 -- lines
@@ -65,4 +65,7 @@ main = do
                 $ userRepos ++ orgRepos)
         )
     where
-        getRepoCommitsFor' u s r = getAllCommits r u s
+        getRepoCommitsFor' u s r =
+                L.sortBy (comparing (preview (commit . author . date . _String)))
+            .   nubBy (preview (sha . _String))
+            <$> getAllCommits r u s
