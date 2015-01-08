@@ -13,6 +13,7 @@ module GhWeekly.Types
     , ghwOrgs
     , ghwDays
     , ghwOauthToken
+    , ghwSince
 
     , GhAuth
     , Github
@@ -39,6 +40,7 @@ import           Control.Lens
 import           Control.Monad.Reader
 import           Data.Aeson
 import qualified Data.Text            as T
+import           Data.Time
 
 
 type OauthToken = T.Text
@@ -51,6 +53,7 @@ data GhWeekly
         , _ghwOrgs       :: !(Maybe T.Text)
         , _ghwDays       :: !Int
         , _ghwOauthToken :: !OauthToken
+        , _ghwSince      :: !(Maybe UTCTime)
         } deriving (Show)
 makeLenses ''GhWeekly
 

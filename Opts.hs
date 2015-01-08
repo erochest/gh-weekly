@@ -9,8 +9,11 @@ module Opts
     ) where
 
 
+import           Control.Monad       (join)
 import           Data.Text
+import           Data.Time
 import           Options.Applicative
+import           System.Locale
 
 import           GhWeekly.Types
 
@@ -33,6 +36,11 @@ opts' =   GhWeekly
       <*> option textReader
                  (  short 't' <> long "token" <> metavar "GITHUB_TOKEN"
                  <> help "The Oauth token to authenticate with Github.")
+      <*> (fmap join . optional . option timeReader
+                     $  short 's' <> long "since" <> metavar "YYYY-MM-DD"
+                     <> help "The date to query for commits since.\
+                             \ If given, this overrides --days.\
+                             \ The default is one week ago.")
 
 opts :: ParserInfo GhWeekly
 opts = info (helper <*> opts')
@@ -42,3 +50,6 @@ opts = info (helper <*> opts')
 
 textReader :: ReadM Text
 textReader = pack <$> str
+
+timeReader :: ReadM (Maybe UTCTime)
+timeReader = parseTime defaultTimeLocale "%F" <$> str

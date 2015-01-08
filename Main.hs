@@ -31,8 +31,6 @@ import           GhWeekly.Utils
 import           Opts
 
 
--- TODO: set `since` date
-
 -- TODO: give a summary of how many commits, how many files, and how many
 -- lines
 
@@ -50,8 +48,9 @@ exitEither (Right _)  = exitSuccess
 main :: IO ()
 main = do
     GhWeekly{..} <- parseArgs
-    since <-  addUTCTime (fromIntegral $ _ghwDays * 24 * 60 * 60 * (-1))
-          <$> getCurrentTime
+    week <-  addUTCTime (fromIntegral $ _ghwDays * 24 * 60 * 60 * (-1))
+         <$> getCurrentTime
+    let since = fromMaybe week _ghwSince
 
     putStrLn "Querying github..."
     exitEither =<< runGithub _ghwOauthToken (do
