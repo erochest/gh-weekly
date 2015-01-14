@@ -31,9 +31,6 @@ import           GhWeekly.Utils
 import           Opts
 
 
--- TODO: give a summary of how many commits, how many files, and how many
--- lines
-
 -- TODO: html output
 
 -- TODO: issue activity (opened, closed, and contributed to)
@@ -67,6 +64,8 @@ main = do
         )
     where
         getRepoCommitsFor' u s r =
-                L.sortBy (comparing (preview (commit . author . date . _String)))
+                mapM (getCommit r)
+            .   mapMaybe (preview (sha . _String))
+            =<< L.sortBy (comparing (preview (commit . author . date . _String)))
             .   nubBy (preview (sha . _String))
             <$> getAllCommits r u s

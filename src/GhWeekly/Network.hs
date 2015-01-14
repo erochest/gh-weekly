@@ -15,6 +15,7 @@ module GhWeekly.Network
     , getBranchCommits
     , getBranches
     , getAllCommits
+    , getCommit
     ) where
 
 
@@ -123,3 +124,7 @@ getAllCommits :: T.Text -> T.Text -> UTCTime -> Github [Value]
 getAllCommits fullRepoName user since =
     fmap concat . mapM (getBranchCommits fullRepoName user since)
         =<< getBranches fullRepoName
+
+getCommit :: T.Text -> Sha -> Github Value
+getCommit fullRepoName sha =
+    fromMaybe Null . headZ <$> gh ["/repos/", fullRepoName, "/commits/", sha] []

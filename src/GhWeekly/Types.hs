@@ -30,6 +30,8 @@ module GhWeekly.Types
     , UserReport(..)
     , reportUser
     , reportRepo
+
+    , Sha
     ) where
 
 
@@ -46,6 +48,7 @@ import           Data.Time
 type OauthToken = T.Text
 type GhAuth     = OauthToken
 type Param      = (T.Text, T.Text)
+type Sha        = T.Text
 
 data GhWeekly
         = GhWeekly
