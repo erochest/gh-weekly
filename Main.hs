@@ -31,9 +31,9 @@ import           GhWeekly.Utils
 import           Opts
 
 
--- TODO: html output
-
 -- TODO: issue activity (opened, closed, and contributed to)
+
+-- TODO: use monad-par and a pool to download simultaneously
 
 watch :: Show a => a -> IO a
 watch x = putStrLn ("WATCH: " ++ show x) >> return x
@@ -57,6 +57,8 @@ main = do
                   .   mapMaybe (preview (login . _String))
                   =<< getUserOrgs _ghwUser
 
+        -- TODO: Rendering isn't part of the Github interaction. Take it
+        -- out of this do.
         mapM_ (liftIO . TIO.putStr . uncurry renderCommits)
             =<< ( mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
                 . mapMaybe (preview (fullName . _String))
