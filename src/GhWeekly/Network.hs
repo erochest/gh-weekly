@@ -16,6 +16,7 @@ module GhWeekly.Network
     , getBranches
     , getAllCommits
     , getCommit
+    , getIssuesInvolving
     ) where
 
 
@@ -128,3 +129,9 @@ getAllCommits fullRepoName user since =
 getCommit :: T.Text -> Sha -> Github Value
 getCommit fullRepoName sha =
     fromMaybe Null . headZ <$> gh ["/repos/", fullRepoName, "/commits/", sha] []
+
+getIssuesInvolving :: T.Text -> UTCTime -> Github [Value]
+getIssuesInvolving username since =
+    gh ["/search/issues"] [("q", "author:" <> username <> " updated:>" <> since')]
+    where
+        since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since

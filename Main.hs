@@ -33,6 +33,8 @@ import           Opts
 
 -- TODO: issue activity (opened, closed, and contributed to)
 
+-- TODO: integrate issues with repository reports
+
 -- TODO: use monad-par and a pool to download simultaneously
 
 watch :: Show a => a -> IO a
@@ -49,18 +51,24 @@ main = do
          <$> getCurrentTime
     let since = fromMaybe week _ghwSince
 
-    putStrLn "Querying github..."
-    result <- runGithub _ghwOauthToken $ do
-        userRepos <-  getAllUserRepos _ghwUser
-        orgRepos  <-  fmap concat
-                  .   mapM getOrgRepos
-                  .   mapMaybe (preview (login . _String))
-                  =<< getUserOrgs _ghwUser
-        mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
-            . mapMaybe (preview (fullName . _String))
-            $ userRepos ++ orgRepos
-    exitEither result $
-        mapM_ (liftIO . TIO.putStr . uncurry renderCommits)
+    runGithub _ghwOauthToken $
+        liftIO . BS.putStrLn . encode =<< getIssuesInvolving _ghwUser since
+    return ()
+
+    -- putStrLn "Querying github..."
+    {-
+     - result <- runGithub _ghwOauthToken $ do
+     -     userRepos <-  getAllUserRepos _ghwUser
+     -     orgRepos  <-  fmap concat
+     -               .   mapM getOrgRepos
+     -               .   mapMaybe (preview (login . _String))
+     -               =<< getUserOrgs _ghwUser
+     -     mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
+     -         . mapMaybe (preview (fullName . _String))
+     -         $ userRepos ++ orgRepos
+     - exitEither result $
+     -     mapM_ (liftIO . TIO.putStr . uncurry renderCommits)
+     -}
     where
         getRepoCommitsFor' u s r =
                 mapM (getCommit r)
