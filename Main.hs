@@ -38,9 +38,9 @@ import           Opts
 watch :: Show a => a -> IO a
 watch x = putStrLn ("WATCH: " ++ show x) >> return x
 
-exitEither :: Either SomeException a -> IO ()
-exitEither (Left err) = hPrint stderr err >> exitFailure
-exitEither (Right _)  = exitSuccess
+exitEither :: Either SomeException a -> (a -> IO ()) -> IO ()
+exitEither (Left err) _ = hPrint stderr err >> exitFailure
+exitEither (Right x)  f = f x >> exitSuccess
 
 main :: IO ()
 main = do
@@ -50,20 +50,17 @@ main = do
     let since = fromMaybe week _ghwSince
 
     putStrLn "Querying github..."
-    exitEither =<< runGithub _ghwOauthToken (do
+    result <- runGithub _ghwOauthToken $ do
         userRepos <-  getAllUserRepos _ghwUser
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos
                   .   mapMaybe (preview (login . _String))
                   =<< getUserOrgs _ghwUser
-
-        -- TODO: Rendering isn't part of the Github interaction. Take it
-        -- out of this do.
+        mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
+            . mapMaybe (preview (fullName . _String))
+            $ userRepos ++ orgRepos
+    exitEither result $
         mapM_ (liftIO . TIO.putStr . uncurry renderCommits)
-            =<< ( mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
-                . mapMaybe (preview (fullName . _String))
-                $ userRepos ++ orgRepos)
-        )
     where
         getRepoCommitsFor' u s r =
                 mapM (getCommit r)
