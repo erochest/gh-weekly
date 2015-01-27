@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TupleSections     #-}
 
 
 module Main where
@@ -31,10 +32,6 @@ import           GhWeekly.Utils
 import           Opts
 
 
--- TODO: issue activity (opened, closed, and contributed to)
-
--- TODO: integrate issues with repository reports
-
 -- TODO: use monad-par and a pool to download simultaneously
 
 watch :: Show a => a -> IO a
@@ -51,24 +48,17 @@ main = do
          <$> getCurrentTime
     let since = fromMaybe week _ghwSince
 
-    runGithub _ghwOauthToken $
-        liftIO . BS.putStrLn . encode =<< getIssuesInvolving _ghwUser since
-    return ()
-
-    -- putStrLn "Querying github..."
-    {-
-     - result <- runGithub _ghwOauthToken $ do
-     -     userRepos <-  getAllUserRepos _ghwUser
-     -     orgRepos  <-  fmap concat
-     -               .   mapM getOrgRepos
-     -               .   mapMaybe (preview (login . _String))
-     -               =<< getUserOrgs _ghwUser
-     -     mapM (sequenceA . (id &&& getRepoCommitsFor' _ghwUser since))
-     -         . mapMaybe (preview (fullName . _String))
-     -         $ userRepos ++ orgRepos
-     - exitEither result $
-     -     mapM_ (liftIO . TIO.putStr . uncurry renderCommits)
-     -}
+    result <- runGithub _ghwOauthToken $ do
+        userRepos <-  getAllUserRepos _ghwUser
+        orgRepos  <-  fmap concat
+                  .   mapM getOrgRepos
+                  .   mapMaybe (preview (login . _String))
+                  =<< getUserOrgs _ghwUser
+        mapM (getDataFor _ghwUser since)
+            . mapMaybe (preview (fullName . _String))
+            $ userRepos ++ orgRepos
+    exitEither result $
+        mapM_ (liftIO . TIO.putStr . \(n, c, i) -> renderObject n c i)
     where
         getRepoCommitsFor' u s r =
                 mapM (getCommit r)
@@ -76,3 +66,5 @@ main = do
             =<< L.sortBy (comparing (preview (commit . author . date . _String)))
             .   nubBy (preview (sha . _String))
             <$> getAllCommits r u s
+        getDataFor u s r =
+            (r,,) <$> getRepoCommitsFor' u s r <*> getIssuesInvolving u s r
