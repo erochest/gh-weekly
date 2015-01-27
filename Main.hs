@@ -16,6 +16,7 @@ import           Data.Aeson.Lens
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.List                  as L
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Ord
 import qualified Data.Text.IO               as TIO
 import           Data.Time
@@ -48,7 +49,7 @@ main = do
          <$> getCurrentTime
     let since = fromMaybe week _ghwSince
 
-    result <- runGithub _ghwOauthToken $ do
+    (result, calls) <- runGithub _ghwOauthToken $ do
         userRepos <-  getAllUserRepos _ghwUser
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos
@@ -57,8 +58,9 @@ main = do
         mapM (getDataFor _ghwUser since)
             . mapMaybe (preview (fullName . _String))
             $ userRepos ++ orgRepos
+    hPutStrLn stderr $ "API calls: " ++ show calls
     exitEither result $
-        mapM_ (liftIO . TIO.putStr . \(n, c, i) -> renderObject n c i)
+        mapM_ (liftIO . TIO.putStr . renderObject')
     where
         getRepoCommitsFor' u s r =
                 mapM (getCommit r)
@@ -68,3 +70,4 @@ main = do
             <$> getAllCommits r u s
         getDataFor u s r =
             (r,,) <$> getRepoCommitsFor' u s r <*> getIssuesInvolving u s r
+        renderObject' (n, c, i) = renderObject n c i

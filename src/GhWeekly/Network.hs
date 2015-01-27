@@ -38,6 +38,7 @@ import           System.Locale
 
 import           GhWeekly.Lens
 import           GhWeekly.Types
+import           GhWeekly.Utils
 
 
 githubUrl :: String
@@ -63,6 +64,7 @@ github' fullUrl ps = do
         go _ Nothing _      = return []
         go opts (Just u) ps' = do
             -- liftIO . putStrLn $  "github: " ++ u
+            countCall
             r <- liftIO $ getWith (opts & params .~ ps') u
             (:) <$> decodeResponse r <*> go opts (next r) []
 

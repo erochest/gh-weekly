@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 
 
@@ -36,12 +37,14 @@ module GhWeekly.Types
 
 
 import           Control.Applicative
-import           Control.Error
+import           Control.Error               hiding (tryJust)
 import           Control.Exception
 import           Control.Lens
 import           Control.Monad.Reader
+import           Control.Monad.Writer.Strict
 import           Data.Aeson
-import qualified Data.Text            as T
+import           Data.Monoid
+import qualified Data.Text                   as T
 import           Data.Time
 
 
@@ -61,18 +64,37 @@ data GhWeekly
 makeLenses ''GhWeekly
 
 newtype Github a
-    = Github { unGithub :: ReaderT GhAuth (EitherT SomeException IO) a }
+    = Github
+    { unGithub :: ReaderT GhAuth (EitherT SomeException (WriterT (Sum Int) IO)) a
+    }
     deriving (Functor, Applicative, Monad)
 
 instance MonadIO Github where
-    liftIO = Github . liftIO
+    liftIO = Github
+           . ReaderT
+           . const
+           . EitherT
+           . WriterT
+           . fmap (,mempty)
+           . try
 
 instance MonadReader GhAuth Github where
     ask     = Github ask
     local f = Github . local f . unGithub
 
-runGithub :: GhAuth -> Github a -> IO (Either SomeException a)
-runGithub auth gh = runEitherT $ runReaderT (unGithub gh) auth
+instance MonadWriter (Sum Int) Github where
+    tell = Github . lift . tell
+    listen m = do
+        r <- ask
+        Github . lift . listen . (`runReaderT` r) $ unGithub m
+    pass m = do
+        (a, fw) <- m
+        ((), w) <- listen $ return ()
+        writer (a, fw w)
+
+runGithub :: GhAuth -> Github a -> IO (Either SomeException a, Int)
+runGithub auth gh =
+    fmap (fmap getSum) . runWriterT . runEitherT $ runReaderT (unGithub gh) auth
 
 hoistEitherGH :: Either SomeException a -> Github a
 hoistEitherGH = Github . ReaderT . const . EitherT . return
