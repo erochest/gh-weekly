@@ -2,10 +2,7 @@
 
 
 module GhWeekly.Report
-    ( render
-    , renderUser
-    , renderRepo
-    , renderObject
+    ( renderObject
     , renderCommits
     , renderIssues
     ) where
@@ -33,15 +30,6 @@ import           Text.Blaze.Html5
 import           GhWeekly.Lens
 import           GhWeekly.Types
 
-
-render :: UserReport -> T.Text
-render = undefined
-
-renderUser :: UserReport -> Html
-renderUser = undefined
-
-renderRepo :: RepoReport -> Html
-renderRepo = undefined
 
 renderObject :: T.Text -> [Value] -> [Value] -> T.Text
 renderObject repoName commits issues = TL.toStrict . toLazyText $

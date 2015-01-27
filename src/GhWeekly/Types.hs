@@ -23,15 +23,6 @@ module GhWeekly.Types
     , hoistEitherGH'
     , Param
 
-    , RepoReport(..)
-    , rrRepo
-    , rrIssueEvents
-    , rrCommits
-
-    , UserReport(..)
-    , reportUser
-    , reportRepo
-
     , Sha
     ) where
 
@@ -101,18 +92,3 @@ hoistEitherGH = Github . ReaderT . const . EitherT . return
 
 hoistEitherGH' :: Either String a -> Github a
 hoistEitherGH' = hoistEitherGH . fmapL (toException . ErrorCall)
-
-data RepoReport
-        = RepoReport
-        { _rrRepo        :: !Object
-        , _rrIssueEvents :: ![Object]
-        , _rrCommits     :: ![Object]
-        }
-makeLenses ''RepoReport
-
-data UserReport
-        = UserReport
-        { _reportUser :: !Object
-        , _reportRepo :: !RepoReport
-        }
-makeLenses ''UserReport
