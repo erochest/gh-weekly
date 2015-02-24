@@ -17,16 +17,17 @@ module GhWeekly.Types
     , ghwSince
 
     , CallTime
-    , GithubState(..)
-    , ghCalls
-    , ghRPM
-    , defaultState
 
     , GhAuth
+    , GithubConfig(..)
+    , ghcAuth
+    , ghcVerbose
+
     , Github
     , runGithub
     , hoistEitherGH
     , hoistEitherGH'
+    , hoistMaybeGH
     , Param
 
     , Sha
@@ -62,28 +63,23 @@ data GhWeekly
         } deriving (Show)
 makeLenses ''GhWeekly
 
-data GithubState
-        = GHState
-        { _ghCalls   :: !(S.Seq CallTime)
-        , _ghRPM     :: !Int
-        , _ghVerbose :: !Bool
+data GithubConfig
+        = GHConfig
+        { _ghcAuth    :: !GhAuth
+        , _ghcVerbose :: !Bool
         }
-makeLenses ''GithubState
-
--- Requests/minute here is the authenticated search rate limit.
-defaultState :: GithubState
-defaultState = GHState S.empty 20 False
+makeLenses ''GithubConfig
 
 newtype Github a
     = Github
-    { unGithub :: EitherT SomeException (RWST GhAuth (Sum Int) GithubState IO) a
+    { unGithub :: EitherT SomeException (RWST GithubConfig (Sum Int) () IO) a
     }
     deriving (Functor, Applicative, Monad)
 
 instance MonadIO Github where
     liftIO = Github . EitherT . liftIO . try
 
-instance MonadState GithubState Github where
+instance MonadState () Github where
     get = Github . EitherT . fmap Right $ get
     put = Github . EitherT . fmap Right . put
     state f = do
@@ -91,7 +87,7 @@ instance MonadState GithubState Github where
         put s
         return a
 
-instance MonadReader GhAuth Github where
+instance MonadReader GithubConfig Github where
     ask     = Github ask
     local f = Github . local f . unGithub
 
@@ -105,12 +101,14 @@ instance MonadWriter (Sum Int) Github where
 
 runGithub :: GhAuth -> Bool -> Github a -> IO (Either SomeException a, Int)
 runGithub auth verbose gh =
-    fmap getSum <$> evalRWST (runEitherT $ unGithub gh)
-                             auth
-                             (defaultState & ghVerbose .~ verbose)
+    fmap getSum <$> evalRWST (runEitherT $ unGithub gh) (GHConfig auth verbose) ()
 
 hoistEitherGH :: Either SomeException a -> Github a
 hoistEitherGH = Github . EitherT . return
 
 hoistEitherGH' :: Either String a -> Github a
 hoistEitherGH' = hoistEitherGH . fmapL (toException . ErrorCall)
+
+hoistMaybeGH :: String -> Maybe a -> Github a
+hoistMaybeGH _   (Just a) = return a
+hoistMaybeGH msg Nothing  = hoistEitherGH . Left . toException $ ErrorCall msg

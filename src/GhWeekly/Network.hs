@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 
 module GhWeekly.Network
@@ -38,7 +39,9 @@ import qualified Data.Text                as T
 import           Data.Text.Encoding
 import           Data.Text.Format
 import qualified Data.Text.Format         as F
+import           Data.Text.Lazy           (toStrict)
 import           Data.Time
+import           Data.Time.Clock.POSIX
 import           Network.Wreq
 import           System.Locale
 
@@ -55,13 +58,13 @@ github p = github' (githubUrl ++ p)
 
 github' :: FromJSON a => String -> [Param] -> Github [a]
 github' fullUrl ps = do
-    verbose <- RWS.gets _ghVerbose
-    token   <- asks (encodeUtf8 . mappend "token ")
-    let opts = defaults & header "Accept" .~ ["application/vnd.github.v3+json"]
+    GHConfig auth verbose <- ask
+    let token = encodeUtf8 $ "token " <> auth
+        opts = defaults & header "Accept" .~ ["application/vnd.github.v3+json"]
                         & header "Authorization" .~ [token]
     go verbose opts (Just fullUrl) ps
-    where
 
+    where
         decodeResponse = hoistEitherGH'
                        . eitherDecode
                        . (^. responseBody)
@@ -70,43 +73,36 @@ github' fullUrl ps = do
 
         go _ _ Nothing _       = return []
         go v opts (Just u) ps' = do
-            when v $ do
-                now   <- liftIO getCurrentTime
-                calls <- RWS.gets _ghCalls
-                let first = case S.viewl calls of
-                                S.EmptyL -> Nothing
-                                x S.:< _ -> Just x
-                liftIO $ F.print "github\t{}\t{}\t{}\n"
-                         (S.length calls, (now `diffUTCTime`) <$> first, u)
-            throttle >> countCall
+            when v $ liftIO $
+                F.print "{}\t{}\n" . (, u) =<< getCurrentTime
             r <- liftIO $ getWith (opts & params .~ ps') u
+            throttle r >> countCall
             (:) <$> decodeResponse r <*> go v opts (next r) []
 
 gh :: FromJSON a => [T.Text] -> [Param] -> Github [a]
 gh ps = github (path ps)
 
-throttle :: Github ()
-throttle = do
-    now <- liftIO getCurrentTime
-    ghs@GHState{_ghCalls=calls, _ghRPM=rpm} <- RWS.get
-    RWS.put . (ghs &) . set ghCalls =<< throttle' now rpm calls
-
-throttle' :: UTCTime -> Int -> S.Seq CallTime -> Github (S.Seq CallTime)
-throttle' now rpm s
-    | S.null s         = return $ S.singleton now
-    | S.length s < rpm = return $ s S.|> now
-    | otherwise        = cutCalls now ((-60) `addUTCTime` now) rpm s
-
-cutCalls :: UTCTime -> UTCTime -> Int -> S.Seq CallTime -> Github (S.Seq CallTime)
-cutCalls now break rpm s
-    | S.null s   = return $ S.singleton now
-    | x <= break = do v <- RWS.gets _ghVerbose
-                      when v . liftIO $ putStrLn "delaying..."
-                      liftIO $ threadDelay 30
-                      cutCalls now break rpm xs
-    | otherwise  = return $ s S.|> now
+_Int :: Prism' C.ByteString Int
+_Int = prism' fint tint
     where
-        x S.:< xs = S.viewl s
+        fint   = C.pack . show
+        tint s = case C.readInt s of
+                     Just (n, "") -> Just n
+                     Just _       -> Nothing
+                     Nothing      -> Nothing
+
+throttle :: Response a -> Github ()
+throttle r = do
+    now   <- liftIO getCurrentTime
+    reset <- fmap (posixSecondsToUTCTime . fromIntegral)
+          .  hoistMaybeGH "Invalid X-RateLimit-Reset value."
+          $  r ^? responseHeader "X-RateLimit-Reset" . _Int
+    when (reset > now) $ do
+        let delay = reset `diffUTCTime` now
+        verbose <- asks _ghcVerbose
+        when verbose . liftIO $
+            putStrLn "delaying....\n"
+        liftIO . threadDelay . (* 1000) $ floor delay
 
 path :: [T.Text] -> String
 path = T.unpack . mconcat
@@ -171,9 +167,7 @@ getCommit fullRepoName sha =
 
 getIssuesInvolving :: T.Text -> UTCTime -> T.Text -> Github [Value]
 getIssuesInvolving username since repo =
-    gh ["/search/issues"] [("q",  "author:"    <> username
-                               <> " updated:>" <> since'
-                               <> " repo:"     <> repo
-                               )]
+    gh ["/search/issues"] [("q", toStrict query)]
     where
         since' = T.pack $ formatTime defaultTimeLocale "%FT%TZ" since
+        query  = F.format "author:{} updated:>{} repo:{}" (username, since', repo)
