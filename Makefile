@@ -18,7 +18,7 @@ specs: build
 	./dist/build/gh-weekly-specs/gh-weekly-specs
 
 run:
-	${CABAL} run -- --user=erochest --token=$(GITHUB_TOKEN)
+	${CABAL} run -- --user=erochest --token=$(GITHUB_TOKEN) --verbose
 
 
 # docs:
@@ -37,7 +37,7 @@ run:
 # prep and push
 
 tags: ${SRC}
-	hasktags --ctags *.hs src
+	hasktags --extendedctag Main.hs Opts.hs src
 
 hlint:
 	hlint *.hs src specs

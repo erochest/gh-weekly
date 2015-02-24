@@ -49,7 +49,7 @@ main = do
          <$> getCurrentTime
     let since = fromMaybe week _ghwSince
 
-    (result, calls) <- runGithub _ghwOauthToken $ do
+    (result, calls) <- runGithub _ghwOauthToken _ghwVerbose $ do
         userRepos <-  getAllUserRepos _ghwUser
         orgRepos  <-  fmap concat
                   .   mapM getOrgRepos

@@ -6,6 +6,7 @@ module GhWeekly.Network
     , github
     , github'
     , gh
+    , throttle
     , getUser
     , getUserOrgs
     , getOrg
@@ -21,17 +22,22 @@ module GhWeekly.Network
 
 
 import           Control.Applicative
+import           Control.Concurrent
 import           Control.Error
 import           Control.Exception
 import           Control.Lens
 import           Control.Monad.Reader
+import qualified Control.Monad.RWS.Strict as RWS
 import           Data.Aeson
 import           Data.Aeson.Lens
-import qualified Data.ByteString.Char8 as C
-import           Data.Foldable         hiding (concat)
+import qualified Data.ByteString.Char8    as C
+import           Data.Foldable            hiding (concat)
 import           Data.Monoid
-import qualified Data.Text             as T
+import qualified Data.Sequence            as S
+import qualified Data.Text                as T
 import           Data.Text.Encoding
+import           Data.Text.Format
+import qualified Data.Text.Format         as F
 import           Data.Time
 import           Network.Wreq
 import           System.Locale
@@ -49,10 +55,11 @@ github p = github' (githubUrl ++ p)
 
 github' :: FromJSON a => String -> [Param] -> Github [a]
 github' fullUrl ps = do
-    token <- asks (encodeUtf8 . mappend "token ")
+    verbose <- RWS.gets _ghVerbose
+    token   <- asks (encodeUtf8 . mappend "token ")
     let opts = defaults & header "Accept" .~ ["application/vnd.github.v3+json"]
                         & header "Authorization" .~ [token]
-    go opts (Just fullUrl) ps
+    go verbose opts (Just fullUrl) ps
     where
 
         decodeResponse = hoistEitherGH'
@@ -61,15 +68,45 @@ github' fullUrl ps = do
 
         next r = r ^? responseLink "rel" "next" . linkURL . to C.unpack
 
-        go _ Nothing _      = return []
-        go opts (Just u) ps' = do
-            -- liftIO . putStrLn $  "github: " ++ u
-            countCall
+        go _ _ Nothing _       = return []
+        go v opts (Just u) ps' = do
+            when v $ do
+                now   <- liftIO getCurrentTime
+                calls <- RWS.gets _ghCalls
+                let first = case S.viewl calls of
+                                S.EmptyL -> Nothing
+                                x S.:< _ -> Just x
+                liftIO $ F.print "github\t{}\t{}\t{}\n"
+                         (S.length calls, (now `diffUTCTime`) <$> first, u)
+            throttle >> countCall
             r <- liftIO $ getWith (opts & params .~ ps') u
-            (:) <$> decodeResponse r <*> go opts (next r) []
+            (:) <$> decodeResponse r <*> go v opts (next r) []
 
 gh :: FromJSON a => [T.Text] -> [Param] -> Github [a]
 gh ps = github (path ps)
+
+throttle :: Github ()
+throttle = do
+    now <- liftIO getCurrentTime
+    ghs@GHState{_ghCalls=calls, _ghRPM=rpm} <- RWS.get
+    RWS.put . (ghs &) . set ghCalls =<< throttle' now rpm calls
+
+throttle' :: UTCTime -> Int -> S.Seq CallTime -> Github (S.Seq CallTime)
+throttle' now rpm s
+    | S.null s         = return $ S.singleton now
+    | S.length s < rpm = return $ s S.|> now
+    | otherwise        = cutCalls now ((-60) `addUTCTime` now) rpm s
+
+cutCalls :: UTCTime -> UTCTime -> Int -> S.Seq CallTime -> Github (S.Seq CallTime)
+cutCalls now break rpm s
+    | S.null s   = return $ S.singleton now
+    | x <= break = do v <- RWS.gets _ghVerbose
+                      when v . liftIO $ putStrLn "delaying..."
+                      liftIO $ threadDelay 30
+                      cutCalls now break rpm xs
+    | otherwise  = return $ s S.|> now
+    where
+        x S.:< xs = S.viewl s
 
 path :: [T.Text] -> String
 path = T.unpack . mconcat

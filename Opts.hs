@@ -41,6 +41,7 @@ opts' =   GhWeekly
                      <> help "The date to query for commits since.\
                              \ If given, this overrides --days.\
                              \ The default is one week ago.")
+      <*> switch (  short 'v' <> long "verbose" <> help "Enable verbose output.")
 
 opts :: ParserInfo GhWeekly
 opts = info (helper <*> opts')

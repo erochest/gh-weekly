@@ -1,9 +1,11 @@
 module GhWeekly.Utils
     ( nubBy
     , countCall
+    , getCallCount
     ) where
 
 
+import           Control.Applicative
 import           Control.Arrow
 import           Control.Monad.Writer.Strict
 import           Data.Hashable
@@ -18,3 +20,6 @@ nubBy f = M.elems . M.fromList . map (f &&& id)
 
 countCall :: Github ()
 countCall = tell $ Sum 1
+
+getCallCount :: Github Int
+getCallCount = getSum . snd <$> listen (return undefined)
