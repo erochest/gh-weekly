@@ -91,18 +91,20 @@ _Int = prism' fint tint
                      Just _       -> Nothing
                      Nothing      -> Nothing
 
+-- throttle by waiting 0.5 of the time
+-- or by waiting the length to the reset time / remaining count
 throttle :: Response a -> Github ()
 throttle r = do
     now   <- liftIO getCurrentTime
     reset <- fmap (posixSecondsToUTCTime . fromIntegral)
           .  hoistMaybeGH "Invalid X-RateLimit-Reset value."
           $  r ^? responseHeader "X-RateLimit-Reset" . _Int
-    when (reset > now) $ do
-        let delay = reset `diffUTCTime` now
+    let delay = floor $ reset `diffUTCTime` now
+    when (reset > now && delay > 0) $ do
         verbose <- asks _ghcVerbose
-        when verbose . liftIO $
-            putStrLn "delaying....\n"
-        liftIO . threadDelay . (* 1000) $ floor delay
+        when verbose . liftIO .
+            F.print "DELAYING {} ....\n" $ Only delay
+        liftIO . threadDelay $ delay * 1000
 
 path :: [T.Text] -> String
 path = T.unpack . mconcat
